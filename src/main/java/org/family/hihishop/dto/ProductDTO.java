@@ -21,12 +21,11 @@ public class ProductDTO {
     @NotBlank(message = "Name must be not blank !")
     @Size(min = 3, max = 200, message = "Name must be at least 3 characters and at most 200 characters !")
     private String name;
-
     @Min(value = 0, message = "Price of product must be gather value 0 !")
     private Float price;
     private String description;
     private String thumbnail;
     @JsonProperty("category_id")
-    private String categoryId;
+    private Long categoryId;
     private List<MultipartFile> files;
 }

@@ -3,6 +3,8 @@ package org.family.hihishop.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.family.hihishop.dto.CategoryDTO;
+import org.family.hihishop.model.Category;
+import org.family.hihishop.services.CategoryService;
 import org.family.hihishop.utils.ErrorMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,32 +20,44 @@ import java.util.stream.Collectors;
 @RequestMapping("${api.prefix}/categories")
 @RequiredArgsConstructor
 public class CategoryController {
+    private final CategoryService categoryService;
     private final ErrorMessage errorMessage;
+
     @GetMapping
-    public ResponseEntity<String> doGetAll(
-            @RequestParam("page") int page,
-            @RequestParam("limit") int limit
+    public ResponseEntity<?> doGetAll( // khong can phan trang do tra ve it gia tri <100
+                                       @RequestParam("page") int page,
+                                       @RequestParam("limit") int limit
     ) {
-        return ResponseEntity.ok("Successfully !!!" + " page: " + page + " limit: " + limit);
+        List<Category> categories = categoryService.getAllCategories();
+        return ResponseEntity.ok(categories);
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<?> doGetById(@PathVariable Long id) {
+        Category categories = categoryService.getCategoryById(id);
+        return ResponseEntity.ok(categories);
     }
 
     @PostMapping
     public ResponseEntity<?> doCreate(@Valid @RequestBody CategoryDTO categoryDTO,
-                                           BindingResult result
+                                      BindingResult result
     ) {
         if (result.hasErrors()) {
             return ResponseEntity.badRequest().body(errorMessage.getErrorMessages(result));
         }
-        return ResponseEntity.ok("Successfully created !!!" + categoryDTO.getName());
+        categoryService.createCategory(categoryDTO);
+        return ResponseEntity.ok("Successfully created !!!");
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> doUpdate(@PathVariable Long id) {
+    public ResponseEntity<String> doUpdate(@PathVariable Long id,
+                                           @Valid @RequestBody CategoryDTO categoryDTO) {
+        categoryService.updateCategory(id, categoryDTO);
         return ResponseEntity.ok("Successfully updated !!! " + id);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> doDelete(@PathVariable Long id) {
-        return ResponseEntity.ok("Successfully deleted !!! " + id);
+        categoryService.deleteCategory(id);
+        return ResponseEntity.ok("Successfully deleted !!! ");
     }
 }

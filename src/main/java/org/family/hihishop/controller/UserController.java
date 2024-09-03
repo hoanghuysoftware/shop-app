@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.family.hihishop.dto.UserLoginDTO;
 import org.family.hihishop.dto.UserRegisterDTO;
+import org.family.hihishop.services.UserService;
 import org.family.hihishop.utils.ErrorMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import java.util.Objects;
 @RequestMapping("${api.prefix}/users")
 @RequiredArgsConstructor
 public class UserController {
+    private final UserService userService;
     private final ErrorMessage errorMessage;
 
     @PostMapping("/register")
@@ -29,11 +31,16 @@ public class UserController {
             if (result.hasErrors()) {
                 return ResponseEntity.badRequest().body(errorMessage.getErrorMessages(result));
             }
+
             // check retype password is same as password
             if(!userDTO.getPassword().equals(userDTO.getRetypePassword())){
                 return ResponseEntity.badRequest().body("Retype password not match!");
             }
-            return ResponseEntity.status(HttpStatus.CREATED).body("Successfully registered !\n"+userDTO.toString() );
+
+            // Create and save new user
+            userService.createNewUser(userDTO);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body("Successfully registered !");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
