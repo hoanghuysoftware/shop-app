@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.family.hihishop.dto.UserLoginDTO;
 import org.family.hihishop.dto.UserRegisterDTO;
+import org.family.hihishop.dto.response.JwtResponse;
 import org.family.hihishop.services.UserService;
 import org.family.hihishop.utils.ErrorMessage;
 import org.springframework.http.HttpStatus;
@@ -48,9 +49,21 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<?> doLogin(@Valid @RequestBody UserLoginDTO userDTO) {
-        // kiemr tra dang nhap
-        // tra ve token
-        return ResponseEntity.ok("Successfully logged in !");
+        String token = userService.login(userDTO);
+        if(token!=null){
+            return ResponseEntity.ok(JwtResponse.builder()
+                    .status(true)
+                    .message("Login is successfully !")
+                    .typeToken("Bearer ")
+                    .token(token)
+                    .build());
+        }
+        else return ResponseEntity.ok(JwtResponse.builder()
+                .status(false)
+                .message("Invalid phone number or password !")
+                .typeToken("")
+                .token("")
+                .build());
     }
 
 
