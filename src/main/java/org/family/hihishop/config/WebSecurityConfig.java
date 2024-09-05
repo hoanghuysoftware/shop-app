@@ -1,6 +1,7 @@
 package org.family.hihishop.config;
 
 import lombok.RequiredArgsConstructor;
+import org.family.hihishop.model.RoleName;
 import org.family.hihishop.utils.JwtTokenFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +26,16 @@ public class WebSecurityConfig {
                     requests.requestMatchers(HttpMethod.GET,"/api/v1/orders/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
-                            .requestMatchers(HttpMethod.POST, "/api/v1/orders/**").hasRole("ADMIN")
+                            .requestMatchers(HttpMethod.POST, "/api/v1/orders/**").hasRole(RoleName.USER.name())
+                            .requestMatchers(HttpMethod.POST, "/api/v1/categories/**").hasRole(RoleName.ADMIN.name())
+                            .requestMatchers(HttpMethod.POST, "/api/v1/products/**").hasRole(RoleName.ADMIN.name())
+                            .requestMatchers(HttpMethod.PUT, "/api/v1/orders/**").hasRole(RoleName.USER.name())
+                            .requestMatchers(HttpMethod.PUT, "/api/v1/products/**").hasRole(RoleName.ADMIN.name())
+                            .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**").hasRole(RoleName.ADMIN.name())
+                            .requestMatchers(HttpMethod.DELETE, "/api/v1/orders/**").hasRole(RoleName.ADMIN.name())
+                            .requestMatchers(HttpMethod.DELETE, "/api/v1/products/**").hasRole(RoleName.ADMIN.name())
+                            .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**").hasRole(RoleName.ADMIN.name())
+                            .requestMatchers("/api/v1/order-details**").permitAll()
                             .requestMatchers("/api/v1/users/**").permitAll()
                             .anyRequest().authenticated();
                 });
