@@ -42,7 +42,7 @@ public class User extends BasicEntity implements UserDetails {
     private boolean isActive;
 
     @Column(name = "date_of_birth")
-    @JsonFormat(pattern = "dd-MM-yyyy")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private Date dateOfBirth;
 
     @Column(name = "facebook_account_id")

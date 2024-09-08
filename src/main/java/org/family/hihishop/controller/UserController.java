@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.family.hihishop.dto.UserLoginDTO;
 import org.family.hihishop.dto.UserRegisterDTO;
 import org.family.hihishop.dto.response.JwtResponse;
+import org.family.hihishop.model.User;
 import org.family.hihishop.services.UserService;
 import org.family.hihishop.utils.ErrorMessage;
 import org.springframework.http.HttpStatus;
@@ -39,9 +40,9 @@ public class UserController {
             }
 
             // Create and save new user
-            userService.createNewUser(userDTO);
+            User userNew = userService.createNewUser(userDTO);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body("Successfully registered !");
+            return ResponseEntity.status(HttpStatus.CREATED).body(userNew);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
