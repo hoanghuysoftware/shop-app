@@ -24,13 +24,12 @@ public class CategoryController {
     private final ErrorMessage errorMessage;
 
     @GetMapping
-    public ResponseEntity<?> doGetAll( // khong can phan trang do tra ve it gia tri <100
-                                       @RequestParam("page") int page,
-                                       @RequestParam("limit") int limit
+    public ResponseEntity<?> doGetAll(
     ) {
         List<Category> categories = categoryService.getAllCategories();
         return ResponseEntity.ok(categories);
     }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> doGetById(@PathVariable Long id) {
         Category categories = categoryService.getCategoryById(id);

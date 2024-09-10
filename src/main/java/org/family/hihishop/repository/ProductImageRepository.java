@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ProductImageRepository extends JpaRepository<ProductImage , Long> {
     List<ProductImage> getProductImageByProductId(long productId);
+    ProductImage getProductImageByImageUrl(String imageUrl);
 }

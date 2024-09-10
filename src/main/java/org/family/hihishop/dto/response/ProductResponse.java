@@ -19,6 +19,7 @@ import java.util.List;
 @Builder
 @Data
 public class ProductResponse extends BasicResponse{
+    private Long id;
     private String name;
     private Float price;
     private String description;
@@ -28,6 +29,7 @@ public class ProductResponse extends BasicResponse{
 
     public static ProductResponse fromProduct(Product product){
         ProductResponse productResponse = ProductResponse.builder()
+                .id(product.getId())
                 .name(product.getName())
                 .price(product.getPrice())
                 .thumbnail(product.getThumbnail())

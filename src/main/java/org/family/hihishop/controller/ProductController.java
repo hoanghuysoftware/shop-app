@@ -7,10 +7,15 @@ import org.family.hihishop.dto.CategoryDTO;
 import org.family.hihishop.dto.ProductDTO;
 import org.family.hihishop.dto.ProductImageDTO;
 import org.family.hihishop.dto.response.ProductResponse;
+import org.family.hihishop.dto.response.ProductResponsePage;
+import org.family.hihishop.exception.DataNotFoundException;
 import org.family.hihishop.model.Product;
 import org.family.hihishop.model.ProductImage;
+import org.family.hihishop.repository.ProductImageRepository;
+import org.family.hihishop.repository.ProductRepository;
 import org.family.hihishop.services.ProductService;
 import org.family.hihishop.utils.ErrorMessage;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,14 +41,27 @@ import java.util.UUID;
 public class ProductController {
     private final ErrorMessage errorMessage;
     private final ProductService productService;
+    private final ProductRepository productRepository;
+    private final ProductImageRepository productImageRepository;
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchProductByName(@RequestParam(value = "name") String name){
+        List<ProductResponse> products = productService.getProductByName(name);
+        return ResponseEntity.ok(products);
+    }
+
 
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> doGetAll(
+    public ResponseEntity<ProductResponsePage> doGetAll(
             @RequestParam("page") int page,
             @RequestParam("limit") int limit
     ) {
         int totalPage = productService.getAllProducts(PageRequest.of(page, limit)).getTotalPages();
-        return ResponseEntity.ok(productService.getAllProducts(PageRequest.of(page, limit)).getContent());
+
+        return ResponseEntity.ok(ProductResponsePage.builder()
+                .products(productService.getAllProducts(PageRequest.of(page, limit)).getContent())
+                .totalPage(totalPage)
+                .build());
     }
 
     @GetMapping("/{id}")
@@ -53,9 +71,9 @@ public class ProductController {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
-    @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "")
     @Transactional
-    public ResponseEntity<?> doCreate(@Valid @ModelAttribute ProductDTO productDTO,
+    public ResponseEntity<?> doCreate(@Valid @RequestBody ProductDTO productDTO,
                                       BindingResult result
     ) {
         try {
@@ -63,36 +81,52 @@ public class ProductController {
                 return ResponseEntity.badRequest().body(errorMessage.getErrorMessages(result));
             }
             Product newProduct = productService.createProduct(productDTO);
-            List<MultipartFile> files = productDTO.getFiles();
-            files = files == null ? new ArrayList<>() : files;
-            for (MultipartFile file : files) {
-                // Kiem tra kich thuoc va dinh dang file
-                if (file.getSize() == 0) continue;
-                if (file.getSize() > 10 * 1024 * 1024) {
-                    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                            .body("File is too large, please try again later with a larger file size 10MB");
-                }
-                String contentType = file.getContentType();
-                if (contentType == null || !contentType.startsWith("image/")) {
-                    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                            .body("File must be an image");
-                }
-                String fileName = storeFile(file);
-
-                // Luu file anh vao DB
-                productService.createProductImage(
-                        newProduct.getId(),
-                        ProductImageDTO
-                                .builder()
-                                .imageUrl(fileName)
-                                .productId(newProduct.getId())
-                                .build());
-            }
-            return ResponseEntity.ok("Successfully Product created !!!\n");
-        } catch (IOException e) {
+            return ResponseEntity.ok(newProduct);
+        } catch (Exception e) {
             System.out.println(e.getMessage());
             return ResponseEntity.badRequest().body("Not successfully Product created !!! ");
         }
+    }
+
+    @PostMapping(value = "upload/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadImage(@ModelAttribute("files") List<MultipartFile> files, @PathVariable Long id) throws IOException {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("Not found product"));
+
+        List<ProductImage> images = new ArrayList<>();
+        files = files == null ? new ArrayList<>() : files;
+        boolean isUpdateThumbnailImage = false;
+        for (MultipartFile file : files) {
+            // Kiem tra kich thuoc va dinh dang file
+            if (file.getSize() == 0) continue;
+            if (file.getSize() > 10 * 1024 * 1024) {
+                return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                        .body("File is too large, please try again later with a larger file size 10MB");
+            }
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                        .body("File must be an image");
+            }
+            String fileName = storeFile(file);
+            if (!isUpdateThumbnailImage) {
+                product.setThumbnail(fileName);
+                productRepository.save(product);
+                isUpdateThumbnailImage = true;
+            }
+            // Luu file anh vao DB
+            ProductImage productImage = productService.createProductImage(
+                    product.getId(),
+                    ProductImageDTO
+                            .builder()
+                            .imageUrl(fileName)
+                            .productId(product.getId())
+                            .build()
+            );
+            images.add(productImage);
+        }
+
+        return ResponseEntity.ok(images);
     }
 
     private String storeFile(MultipartFile file) throws IOException {
@@ -121,21 +155,21 @@ public class ProductController {
     }
 
     @PostMapping("/fake-data")
-    private ResponseEntity<String> generateFakerData(){
+    private ResponseEntity<String> generateFakerData() {
         Faker faker = new Faker();
-        for (int i=0; i<1_000_000; i++){
+        for (int i = 0; i < 1_000_000; i++) {
             String name = faker.commerce().productName();
-            if(productService.existsProductByName(name))continue;
+            if (productService.existsProductByName(name)) continue;
             ProductDTO productDTO = ProductDTO.builder()
                     .name(name)
                     .price((float) faker.number().numberBetween(0, 90_000_000))
                     .description(faker.lorem().sentence())
                     .thumbnail("")
-                    .categoryId((long) faker.number().numberBetween(1,3))
+                    .categoryId((long) faker.number().numberBetween(1, 3))
                     .build();
             try {
                 productService.createProduct(productDTO);
-            }catch (Exception e){
+            } catch (Exception e) {
                 return ResponseEntity.badRequest().body(e.getMessage());
             }
         }
@@ -143,11 +177,22 @@ public class ProductController {
     }
 
 
+    @GetMapping("img/{name}")
+    public ResponseEntity<?> getImgByUrl(@PathVariable String name) {
+        try {
+            java.nio.file.Path imagePath = Paths.get("uploads/" + name);
+            UrlResource resource = new UrlResource(imagePath.toUri());
 
-
-
-
-
+            if (resource.exists()) {
+                return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return ResponseEntity.badRequest().body("Not found image");
+        }
+    }
 
 
 }

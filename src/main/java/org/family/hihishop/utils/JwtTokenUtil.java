@@ -21,7 +21,11 @@ public class JwtTokenUtil {
 
     @Value(("${jwt.expiration}"))
     private  int expiration;
-    private final SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+    @Value("${jwt.secret}")
+    private String secret;
+    private SecretKey getSecretKey() {
+        return Keys.hmacShaKeyFor(secret.getBytes());
+    }
 
     public String generateToken(User user){
         Map<String , Object> clams = new HashMap<String , Object>();
@@ -32,7 +36,7 @@ public class JwtTokenUtil {
                     .setSubject(user.getPhoneNumber())
                     .setIssuedAt(new Date())
                     .setExpiration(new Date(new Date().getTime() + expiration))
-                    .signWith(secretKey)
+                    .signWith(getSecretKey())
                     .compact();
         }catch (Exception e){
             System.out.println(e.getMessage());
@@ -43,7 +47,7 @@ public class JwtTokenUtil {
     public boolean validateToken(String token){
         try{
             Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+                    .setSigningKey(getSecretKey())
                     .build()
                     .parseClaimsJws(token);
             return true;
@@ -65,7 +69,7 @@ public class JwtTokenUtil {
 
     private Claims getAllClaim(String token){
         return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
+                .setSigningKey(getSecretKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();

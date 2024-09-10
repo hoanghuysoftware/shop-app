@@ -20,5 +20,5 @@ spring:
       max-request-size: 10MB
 
 jwt:
-  expiration: 259200000
-  secret: hoanghuy123
+  expiration: 86400000
+  secret: =yourSecretKey1234567890123456789012345678901234

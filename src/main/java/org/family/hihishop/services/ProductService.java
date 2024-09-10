@@ -16,6 +16,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ProductService implements IProductService {
@@ -41,6 +43,14 @@ public class ProductService implements IProductService {
     @Override
     public ProductResponse getProductById(Long id) {
         return ProductResponse.fromProduct(productRepository.findById(id).get());
+    }
+
+    @Override
+    public List<ProductResponse> getProductByName(String name) {
+        return productRepository.getProductsByNameContains(name)
+                .stream()
+                .map(ProductResponse::fromProduct)
+                .toList();
     }
 
     @Override
@@ -93,4 +103,6 @@ public class ProductService implements IProductService {
         }
         return productImageRepository.save(productImage);
     }
+
+
 }
